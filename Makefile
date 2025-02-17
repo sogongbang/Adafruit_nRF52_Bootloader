@@ -13,10 +13,20 @@
 # Board specific
 -include src/boards/$(BOARD)/board.mk
 
+ifeq ($(VERBOSE), 1)
+    Q =
+else
+    Q = @
+endif
+
 SDK_PATH     = lib/sdk/components
 SDK11_PATH   = lib/sdk11/components
-TUSB_PATH    = lib/tinyusb/src
-NRFX_PATH    = lib/nrfx
+TUSB_PATH    = ../tinyusb_Adafruit_nRF52_Bootloader/src
+NRFX_PATH    = ../nrfx_Adafruit_nRF52_Bootloader
+UF2_PATH	 = ../uf2_Adafruit_nRF52_Bootloader
+# TUSB_PATH    = lib/tinyusb/src
+# NRFX_PATH    = lib/nrfx
+# UF2_PATH	 = lib/uf2
 SD_PATH      = lib/softdevice/$(SD_FILENAME)
 
 # SD_VERSION can be overwritten by board.mk
@@ -390,72 +400,72 @@ all: $(BUILD)/$(OUT_NAME).out $(BUILD)/$(OUT_NAME)_nosd.hex $(BUILD)/update-$(OU
 # Print out the value of a make variable.
 # https://stackoverflow.com/questions/16467718/how-to-print-out-a-variable-in-makefile
 print-%:
-	@echo $* = $($*)
+	$(Q)echo $* = $($*)
 
 #------------------- Compile rules -------------------
 
 # Create build directories
 $(BUILD):
-	@$(MKDIR) "$@"
+	$(Q)$(MKDIR) "$@"
 
 clean:
-	@$(RM) $(BUILD)
-	@$(RM) $(BIN)
+	$(Q)$(RM) $(BUILD)
+	$(Q)$(RM) $(BIN)
 
 # linkermap must be install previously at https://github.com/hathach/linkermap
 linkermap: $(BUILD)/$(OUT_NAME).out
-	@linkermap -v $<.map
+	$(Q)linkermap -v $<.map
 
 # Create objects from C SRC files
 $(BUILD)/%.o: %.c
-	@echo CC $(notdir $<)
-	@$(CC) $(CFLAGS) $(INC_PATHS) -c -o $@ $<
+	$(Q)echo CC $(notdir $<)
+	$(Q)$(CC) $(CFLAGS) $(INC_PATHS) -c -o $@ $<
 
 # Assemble files
 $(BUILD)/%.o: %.S
-	@echo AS $(notdir $<)
-	@$(CC) -x assembler-with-cpp $(ASFLAGS) $(INC_PATHS) -c -o $@ $<
+	$(Q)echo AS $(notdir $<)
+	$(Q)$(CC) -x assembler-with-cpp $(ASFLAGS) $(INC_PATHS) -c -o $@ $<
 
 # Link
 $(BUILD)/$(OUT_NAME).out: $(BUILD) $(OBJECTS)
-	@echo LD $(notdir $@)
-	@$(CC) -o $@ $(LDFLAGS) $(OBJECTS) -Wl,--start-group $(LIBS) -Wl,--end-group
-	@$(SIZE) $@
+	$(Q)echo LD $(notdir $@)
+	$(Q)$(CC) -o $@ $(LDFLAGS) $(OBJECTS) -Wl,--start-group $(LIBS) -Wl,--end-group
+	$(Q)$(SIZE) $@
 
 #------------------- Binary generator -------------------
 
 # Create hex file (no sd, no mbr)
 $(BUILD)/$(OUT_NAME).hex: $(BUILD)/$(OUT_NAME).out
-	@echo Create $(notdir $@)
-	@$(OBJCOPY) -O ihex $< $@
+	$(Q)echo Create $(notdir $@)
+	$(Q)$(OBJCOPY) -O ihex $< $@
 
 # Hex file with mbr (still no SD)
 $(BUILD)/$(OUT_NAME)_nosd.hex: $(BUILD)/$(OUT_NAME).hex
-	@echo Create $(notdir $@)
-	@python3 tools/hexmerge.py --overlap=replace -o $@ $< $(MBR_HEX)
+	$(Q)echo Create $(notdir $@)
+	$(Q)python3 tools/hexmerge.py --overlap=replace -o $@ $< $(MBR_HEX)
 
 # Bootolader self-update uf2
 $(BUILD)/update-$(OUT_NAME)_nosd.uf2: $(BUILD)/$(OUT_NAME)_nosd.hex
-	@echo Create $(notdir $@)
-	@python3 lib/uf2/utils/uf2conv.py -f $(UF2_FAMILY_ID_BOOTLOADER) -c -o $@ $^
+	$(Q)echo Create $(notdir $@)
+	$(Q)python3 $(UF2_PATH)/utils/uf2conv.py -f $(UF2_FAMILY_ID_BOOTLOADER) -c -o $@ $^
 
 # merge bootloader and sd hex together
 $(BUILD)/$(MERGED_FILE).hex: $(BUILD)/$(OUT_NAME).hex
-	@echo Create $(notdir $@)
-	@python3 tools/hexmerge.py -o $@ $< $(SD_HEX)
+	$(Q)echo Create $(notdir $@)
+	$(Q)python3 tools/hexmerge.py -o $@ $< $(SD_HEX)
 
 # Create pkg zip file for bootloader+SD combo to use with DFU CDC
 $(BUILD)/$(MERGED_FILE).zip: $(BUILD)/$(OUT_NAME).hex
-	@$(NRFUTIL) dfu genpkg --dev-type 0x0052 --dev-revision $(DFU_DEV_REV) --bootloader $< --softdevice $(SD_HEX) $@
+	$(Q)$(NRFUTIL) dfu genpkg --dev-type 0x0052 --dev-revision $(DFU_DEV_REV) --bootloader $< --softdevice $(SD_HEX) $@
 
 #-------------- Artifacts --------------
 $(BIN):
-	@$(MKDIR) -p $@
+	$(Q)$(MKDIR) -p $@
 
 copy-artifact: $(BIN)
-	@$(CP) $(BUILD)/update-$(OUT_NAME)_nosd.uf2 $(BIN)
-	@$(CP) $(BUILD)/$(MERGED_FILE).hex $(BIN)
-	@$(CP) $(BUILD)/$(MERGED_FILE).zip $(BIN)
+	$(Q)$(CP) $(BUILD)/update-$(OUT_NAME)_nosd.uf2 $(BIN)
+	$(Q)$(CP) $(BUILD)/$(MERGED_FILE).hex $(BIN)
+	$(Q)$(CP) $(BUILD)/$(MERGED_FILE).zip $(BIN)
 
 #--------------------------------------
 # Flash Target
@@ -470,37 +480,37 @@ __check_defined = \
 
 # erase chip
 erase:
-	@echo Erasing flash
+	$(Q)echo Erasing flash
 	$(call FLASH_ERASE_CMD)
 
 # Flash the compiled
 flash: $(BUILD)/$(OUT_NAME)_nosd.hex
-	@echo Flashing: $(notdir $<)
+	$(Q)echo Flashing: $(notdir $<)
 	$(call FLASH_CMD,$<)
 
 # flash SD only
 sd: flash-sd
 flash-sd:
-	@echo Flashing: $(SD_HEX)
+	$(Q)echo Flashing: $(SD_HEX)
 	$(call FLASH_NOUICR_CMD,$(SD_HEX))
 
 # flash MBR only
 mbr: flash-mbr
 flash-mbr:
-	@echo Flashing: $(MBR_HEX)
+	$(Q)echo Flashing: $(MBR_HEX)
 	$(call FLASH_NOUICR_CMD,$(MBR_HEX))
 
 # flash using uf2
 flash-uf2: $(BUILD)/update-$(OUT_NAME)_nosd.uf2
-	@echo Flashing: $(notdir $<)
-	python lib/uf2/utils/uf2conv.py -f $(UF2_FAMILY_ID_BOOTLOADER) --deploy $<
+	$(Q)echo Flashing: $(notdir $<)
+	python $(UF2_PATH)/utils/uf2conv.py -f $(UF2_FAMILY_ID_BOOTLOADER) --deploy $<
 
 # dfu with adafruit-nrfutil using CDC interface
 dfu-flash: flash-dfu
 flash-dfu: $(BUILD)/$(MERGED_FILE).zip
-	@:$(call check_defined, SERIAL, example: SERIAL=/dev/ttyACM0)
+	$(Q):$(call check_defined, SERIAL, example: SERIAL=/dev/ttyACM0)
 	$(NRFUTIL) --verbose dfu serial --package $< -p $(SERIAL) -b 115200 --singlebank --touch 1200
-	
+
 # flash skip crc magic ( app valid = 0x0001, crc = 0x0000 )
 #flash-skip-crc:
 # nrfjprog --memwr $(BOOT_SETTING_ADDR) --val 0x00000001 -f nrf52
@@ -510,8 +520,8 @@ flash-dfu: $(BUILD)/$(MERGED_FILE).zip
 #------------------- Debugging -------------------
 
 gdbflash: $(BUILD)/$(MERGED_FILE).hex
-	@echo Flashing: $<
-	@$(GDB_BMP) -nx --batch -ex 'load $<' -ex 'compare-sections' -ex 'kill'
+	$(Q)echo Flashing: $<
+	$(Q)$(GDB_BMP) -nx --batch -ex 'load $<' -ex 'compare-sections' -ex 'kill'
 
 gdb: $(BUILD)/$(OUT_NAME).out
 	$(GDB_BMP) $<
