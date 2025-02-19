@@ -21,9 +21,9 @@ endif
 
 SDK_PATH     = lib/sdk/components
 SDK11_PATH   = lib/sdk11/components
-TUSB_PATH    = ../tinyusb_Adafruit_nRF52_Bootloader/src
-NRFX_PATH    = ../nrfx_Adafruit_nRF52_Bootloader
-UF2_PATH	 = ../uf2_Adafruit_nRF52_Bootloader
+TUSB_PATH    = ../Adafruit_nRF52_Bootloader_tinyusb/src
+NRFX_PATH    = ../Adafruit_nRF52_Bootloader_nrfx
+UF2_PATH	 = ../Adafruit_nRF52_Bootloader_uf2
 # TUSB_PATH    = lib/tinyusb/src
 # NRFX_PATH    = lib/nrfx
 # UF2_PATH	 = lib/uf2
