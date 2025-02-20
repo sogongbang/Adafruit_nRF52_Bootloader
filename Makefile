@@ -50,8 +50,10 @@ else
   LD_FILE = linker/$(MCU_SUB_VARIANT).ld
 endif
 
-GIT_VERSION := $(shell git describe --dirty --always --tags)
-GIT_SUBMODULE_VERSIONS := $(shell git submodule status | cut -d" " -f3,4 | paste -s -d" " -)
+# GIT_VERSION := $(shell git describe --dirty --always --tags)
+# GIT_SUBMODULE_VERSIONS := $(shell git submodule status | cut -d" " -f3,4 | paste -s -d" " -)
+GIT_VERSION := 0.9.2
+GIT_SUBMODULE_VERSIONS := Adafruit_nRF52_Bootloader-v000902
 
 # compiled file name
 OUT_NAME = $(BOARD)_bootloader-$(GIT_VERSION)
